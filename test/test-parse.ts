@@ -670,3 +670,46 @@ describe("mixed languages", () => {
     ist(tree2.toString(), "Doc(Section(Phrase),Section(Phrase))")
   })
 })
+
+describe('parsing with showAllNodes option', () => {
+  let grammar = `
+    @top P { A whitespace A whitespace A }
+    A { B C }
+    @tokens {
+      B { "B" }
+      C { "C" }
+      whitespace { std.whitespace+ }
+    }`
+  let doc = "BC BC BC"
+
+  it("can parse normally, with hidden nodes hidden", () => {
+    let parser = p(
+      grammar
+    )
+    let ast = parser().configure({bufferLength: 2}).parse(doc)
+    let expected = "P(A(B,C),A(B,C),A(B,C))"
+    testTree(ast, expected)
+  })
+
+  it("can parse in showAllNodes mode, with hidden nodes revealed", () => {
+    let parser = p(
+      grammar,
+      { showAllNodes: true }
+    )
+    let ast = parser().configure({bufferLength: 2}).parse(doc)
+    let expected = "P(A(B,C),whitespace,A(B,C),whitespace,A(B,C))"
+    testTree(ast, expected)
+  })
+
+
+  it("can parse in showAllNodes mode using environment variable, with hidden nodes revealed", () => {
+    process.env.SHOW_ALL_NODES = '1'
+    let parser = p(
+      grammar
+    )
+    process.env.SHOW_ALL_NODES = undefined
+    let ast = parser().configure({bufferLength: 2}).parse(doc)
+    let expected = "P(A(B,C),whitespace,A(B,C),whitespace,A(B,C))"
+    testTree(ast, expected)
+  })
+})

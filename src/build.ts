@@ -95,6 +95,10 @@ export type BuildOptions = {
   /// If given, will be used as context tracker in a parser built with
   /// `buildParser`.
   contextTracker?: ContextTracker<any>
+  /// If given, will show all nodes in the parse tree, including nodes
+  /// starting with lower-case letters. Useful for debugging.
+  /// This mode can also be activated by setting `SHOW_ALL_NODES` in the environment
+  showAllNodes?: boolean
 }
 
 type SkipInfo = {skip: readonly Term[], rule: Term | null, startTokens: readonly Term[], id: number}
@@ -881,6 +885,10 @@ class Builder {
     return name
   }
 
+  showAllNodes(): boolean {
+    return this.options.showAllNodes || (process && !!process.env.SHOW_ALL_NODES)
+  }
+
   nodeInfo(props: readonly Prop[],
            // p for dynamic precedence, d for dialect, i for inline, g for group, a for disabling the ignore test for default name
            allow: string,
@@ -896,7 +904,8 @@ class Builder {
     exported: string | null
   } {
     let result: Props = {}
-    let name = defaultName && (allow.indexOf("a") > -1 || !ignored(defaultName)) && !/ /.test(defaultName) ? defaultName : null
+    let shouldIgnore: boolean = defaultName && ignored(defaultName) && !this.showAllNodes()
+    let name = defaultName && (allow.indexOf("a") > -1 || !shouldIgnore) && !/ /.test(defaultName) ? defaultName : null
     let dialect = null, dynamicPrec = 0, inline = false, group: string | null = null, exported = null
     for (let prop of props) {
       if (!prop.at) {
